@@ -1,17 +1,8 @@
-
-#define GL3_PROTOTYPES 1
-
-#ifdef USE_GLEW
-#include "GL/glew.h"
-#else
-//#include <GLES3/gl3.h>
-//#include <GLES3/gl3ext.h>
-#endif
-
-#include "sdl2_util.h"
-#include <dlfcn.h>
-
+//
+// INCLUDES FOR OGL/SDL
+//
 #if __ANDROID__
+#include <dlfcn.h>
 #define GL_GLEXT_PROTOTYPES 1
 #include "SDL_opengles2.h"
 #include <GLES2/gl2.h>
@@ -22,6 +13,14 @@
 #define glBindVertexArray glBindVertexArrayOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
 #endif
+
+#ifdef _WIN32
+#define USE_GLEW
+#include "GL/glew.h"		// handles loadin of GL extensions
+#include "SDL_opengl.h"
+#endif
+
+#include "sdl2_util.h"
 
 const Uint8* gCurrentKeyStates = nullptr;
 
@@ -53,7 +52,15 @@ private:
 		// TODO - set this to enable GLES for mobile
 		// Set our OpenGL version.
 		// SDL_GL_CONTEXT_CORE gives us only the newer version, deprecated functions are disabled
-		if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES /*SDL_GL_CONTEXT_PROFILE_CORE*/) != 0)
+		if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 
+#ifdef _WIN32
+			SDL_GL_CONTEXT_PROFILE_CORE
+#endif
+#if __ANDROID__
+			SDL_GL_CONTEXT_PROFILE_ES
+#endif
+		)
+			!= 0)
 		{
 			return -1;
 		}
@@ -97,7 +104,11 @@ public:
 
 		// Create window
 		window = SDL_CreateWindow("SDL2_OPENGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                  wndWidth, wndHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
+                                  wndWidth, wndHeight, SDL_WINDOW_OPENGL
+#if __ANDROID__
+			| SDL_WINDOW_FULLSCREEN
+#endif
+		);
 		if (window == nullptr)
 		{
 			logSDLError(std::cout, "CreateWindow");
@@ -113,7 +124,7 @@ public:
 
 #ifdef USE_GLEW
 		// This tells OpenGL that we want to use OpenGL 3.0 stuff and later.
-		glewExperimental = GL_TRUE;
+		//glewExperimental = GL_TRUE;
 		glewInit();
 #endif
 
@@ -163,6 +174,7 @@ public:
 			// Clear color buffer
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			// set color to red
             glColor3f(1,0,0);
 
 			//
