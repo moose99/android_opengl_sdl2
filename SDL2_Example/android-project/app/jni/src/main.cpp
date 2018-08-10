@@ -16,20 +16,12 @@
 #include "SDL_opengles2.h"
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
-#endif
-
-#if 0
-//these ugly typenames are defined in GLES2/gl2ext.h
-PFNGLBINDVERTEXARRAYOESPROC bindVertexArrayOES;
-PFNGLDELETEVERTEXARRAYSOESPROC deleteVertexArraysOES;
-PFNGLGENVERTEXARRAYSOESPROC genVertexArraysOES;
-PFNGLISVERTEXARRAYOESPROC isVertexArrayOES;
-#endif
 
 // OES_vertex_array_object
 #define glGenVertexArrays glGenVertexArraysOES
 #define glBindVertexArray glBindVertexArrayOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
+#endif
 
 const Uint8* gCurrentKeyStates = nullptr;
 
@@ -51,21 +43,6 @@ private:
 	GLuint VertexArrayID;
 	// This will identify our vertex buffer
 	GLuint vertexbuffer;
-
-#if 0
-    void initialiseFunctions () {
-//[check here that VAOs are actually supported]
-        void *libhandle = dlopen("libGLESv2.so", RTLD_LAZY);
-        bindVertexArrayOES = (PFNGLBINDVERTEXARRAYOESPROC) dlsym(libhandle,
-                                                               "glBindVertexArrayOES");
-        deleteVertexArraysOES = (PFNGLDELETEVERTEXARRAYSOESPROC) dlsym(libhandle,
-                                                                       "glDeleteVertexArraysOES");
-        genVertexArraysOES = (PFNGLGENVERTEXARRAYSOESPROC) dlsym(libhandle,
-                                                                 "glGenVertexArraysOES");
-        isVertexArrayOES = (PFNGLISVERTEXARRAYOESPROC) dlsym(libhandle,
-                                                             "glIsVertexArrayOES");
-    };
-#endif
 
     //
 	// init openGL stuff for SDL
@@ -133,8 +110,6 @@ public:
 		{
 			return -1;
 		}
-
-//        initialiseFunctions();
 
 #ifdef USE_GLEW
 		// This tells OpenGL that we want to use OpenGL 3.0 stuff and later.
