@@ -3,6 +3,14 @@
 //
 #if __ANDROID__
 #include <dlfcn.h>
+#define USE_GLES
+#endif
+
+#ifdef _WIN32
+#define USE_GLEW
+#endif
+
+#ifdef USE_GLES
 #define GL_GLEXT_PROTOTYPES 1
 #include "SDL_opengles2.h"
 #include <GLES2/gl2.h>
@@ -12,10 +20,7 @@
 #define glGenVertexArrays glGenVertexArraysOES
 #define glBindVertexArray glBindVertexArrayOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
-#endif
-
-#ifdef _WIN32
-#define USE_GLEW
+#else
 #include "GL/glew.h"		// handles loadin of GL extensions
 #include "SDL_opengl.h"
 #endif
@@ -24,7 +29,11 @@
 
 const Uint8* gCurrentKeyStates = nullptr;
 
-constexpr unsigned int wndWidth{ 800 }, wndHeight{ 600 };
+#ifdef _WIN32
+constexpr unsigned int wndWidth{ 270 }, wndHeight{ 480 };
+#else
+constexpr unsigned int wndWidth{ 1080 }, wndHeight{ 1920 };
+#endif
 
 // An array of 3 vectors which represents 3 vertices
 static const GLfloat g_vertex_buffer_data[] = {
@@ -52,12 +61,11 @@ private:
 		// TODO - set this to enable GLES for mobile
 		// Set our OpenGL version.
 		// SDL_GL_CONTEXT_CORE gives us only the newer version, deprecated functions are disabled
-		if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 
-#ifdef _WIN32
-			SDL_GL_CONTEXT_PROFILE_CORE
-#endif
-#if __ANDROID__
-			SDL_GL_CONTEXT_PROFILE_ES
+		if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+#ifdef USE_GLES
+								SDL_GL_CONTEXT_PROFILE_ES
+#else
+								SDL_GL_CONTEXT_PROFILE_CORE
 #endif
 		)
 			!= 0)
@@ -106,7 +114,7 @@ public:
 		window = SDL_CreateWindow("SDL2_OPENGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                   wndWidth, wndHeight, SDL_WINDOW_OPENGL
 #if __ANDROID__
-			| SDL_WINDOW_FULLSCREEN
+									| SDL_WINDOW_FULLSCREEN
 #endif
 		);
 		if (window == nullptr)
@@ -173,9 +181,6 @@ public:
 			glClearColor(0.39f, 0.58f, 0.93f, 1.f);
 			// Clear color buffer
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			// set color to red
-            glColor3f(1,0,0);
 
 			//
 			// draw triangle

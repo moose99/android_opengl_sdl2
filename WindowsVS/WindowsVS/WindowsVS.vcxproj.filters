@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\SDL2_Example\android-project\app\jni\src\main.cpp">
+    <ClCompile Include="..\..\android-project\app\jni\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\SDL2_Example\android-project\app\jni\src\sdl2_util.cpp">
+    <ClCompile Include="..\..\android-project\app\jni\src\sdl2_util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\SDL2_Example\android-project\app\jni\src\sdl2_util.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="..\..\android-project\app\jni\src\sdl2_util.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
