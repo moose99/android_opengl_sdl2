@@ -1,33 +1,7 @@
 //
-// INCLUDES FOR OGL/SDL
+// MAIN FILE
 //
-#if __ANDROID__
-#include <dlfcn.h>
-#define USE_GLES
-#endif
-
-#ifdef _WIN32
-#define USE_GLEW
-#endif
-
-#ifdef USE_GLES
-#define GL_GLEXT_PROTOTYPES 1
-#include "SDL_opengles2.h"
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
-
-// OES_vertex_array_object
-#define glGenVertexArrays glGenVertexArraysOES
-#define glBindVertexArray glBindVertexArrayOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
-#else
-#include "GL/glew.h"		// handles loadin of GL extensions
-#include "SDL_opengl.h"
-#endif
-
-#include "sdl2_util.h"
-
-const Uint8* gCurrentKeyStates = nullptr;
+#include "includes.h"
 
 #ifdef _WIN32
 constexpr unsigned int wndWidth{ 270 }, wndHeight{ 480 };
@@ -42,15 +16,65 @@ static const GLfloat g_vertex_buffer_data[] = {
 	0.0f,  1.0f, 0.0f,
 };
 
+/**
+* Log an SDL error with some error message to the output stream of our choice
+* @param os The output stream to write the message to
+* @param msg The error message to write, format will be msg error: SDL_GetError()
+*/
+void logSDLError(std::ostream &os, const std::string &msg)
+{
+    os << msg << " error: " << SDL_GetError() << std::endl;
+}
+
+//
+//
+//
+void logMessage(const std::string &msg)
+{
+#if __ANDROID__
+    __android_log_write(ANDROID_LOG_INFO, "MOOSE", msg.c_str());
+#endif
+#ifdef _WIN32
+    std::cout << "INFO: MOOSE: " << msg << std::endl;
+#endif
+}
+
+//
+//
+//
 class Game
 {
 private:
-	SDL_Window *window = nullptr;
+    const Uint8* pCurrentKeyStates = nullptr;
+    SDL_Window *window = nullptr;
 	SDL_GLContext glContext;
-
 	GLuint VertexArrayID;
-	// This will identify our vertex buffer
 	GLuint vertexbuffer;
+    GLuint programID;
+
+#if __ANDROID__
+    AAssetManager *pAssetManager = nullptr;
+    jobject global_asset_manager;
+
+    //
+    // Gets the Android Asset Manager object, used for load asset files
+    //
+    void getAssetManager()
+    {
+        JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+        jobject activity = (jobject)SDL_AndroidGetActivity();
+        jclass activity_class = env->GetObjectClass(activity);
+        jmethodID activity_class_getAssets = env->GetMethodID(activity_class, "getAssets", "()Landroid/content/res/AssetManager;");
+        jobject asset_manager = env->CallObjectMethod(activity, activity_class_getAssets); // activity.getAssets();
+        global_asset_manager = env->NewGlobalRef(asset_manager);
+
+        pAssetManager = AAssetManager_fromJava(env, global_asset_manager);
+        if (pAssetManager == nullptr)
+        {
+            logMessage("Failed getting AssetManager");
+        }
+    }
+#endif
 
     //
 	// init openGL stuff for SDL
@@ -136,13 +160,26 @@ public:
 		glewInit();
 #endif
 
-		// create a Vertex Array Object and set it as the current one :
+        // This makes our buffer swap syncronized with the monitor's vertical refresh
+        SDL_GL_SetSwapInterval(1);
+
+        // create a Vertex Array Object and set it as the current one :
 		glGenVertexArrays(1, &VertexArrayID);
 		glBindVertexArray(VertexArrayID);
 
-		// This makes our buffer swap syncronized with the monitor's vertical refresh
-		SDL_GL_SetSwapInterval(1);
-
+        // Create and compile our GLSL program from the shaders
+#ifdef _WIN32
+        programID = LoadShaders( "assets/simple_vertex_shader.vs", "assets/simple_fragment_shader.fs" );
+#endif
+#if __ANDROID__
+        getAssetManager();
+        programID = LoadShadersAndroid(pAssetManager, "simple_vertex_shader.vs", "simple_fragment_shader.fs" );
+#endif
+        if (programID == 0)
+        {
+            logMessage("Failed loading shaders");
+            return -1;
+        }
 		//
 		// create triangle buffer
 		//
@@ -173,38 +210,44 @@ public:
 			}
 
 			// key state
-			gCurrentKeyStates = SDL_GetKeyboardState(NULL);
-			if (gCurrentKeyStates[SDL_SCANCODE_ESCAPE])
+			pCurrentKeyStates = SDL_GetKeyboardState(NULL);
+			if (pCurrentKeyStates[SDL_SCANCODE_ESCAPE])
 				break;
 
-			// Set background color as cornflower blue
-			glClearColor(0.39f, 0.58f, 0.93f, 1.f);
-			// Clear color buffer
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            // Clear the screen
+            glClear( GL_COLOR_BUFFER_BIT );
 
-			//
-			// draw triangle
-			//
-			// 1st attribute buffer : vertices
-			glEnableVertexAttribArray(0);
-			glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-			glVertexAttribPointer(
-				0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-				3,                  // size
-				GL_FLOAT,           // type
-				GL_FALSE,           // normalized?
-				0,                  // stride
-				(void*)0            // array buffer offset
-			);
-			// Draw the triangle !
-			glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
-			glDisableVertexAttribArray(0);
+            // Use our shader
+            glUseProgram(programID);
+
+            // 1rst attribute buffer : vertices
+            glEnableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+            glVertexAttribPointer(
+                    0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                    3,                  // size
+                    GL_FLOAT,           // type
+                    GL_FALSE,           // normalized?
+                    0,                  // stride
+                    (void*)0            // array buffer offset
+            );
+
+            // Draw the triangle !
+            glDrawArrays(GL_TRIANGLES, 0, 3); // 3 indices starting at 0 -> 1 triangle
+
+            glDisableVertexAttribArray(0);
 
 			// Update window with OpenGL rendering
 			SDL_GL_SwapWindow(window);
 		}
 
 		// cleanup
+
+        // Cleanup VBO
+        glDeleteBuffers(1, &vertexbuffer);
+        glDeleteVertexArrays(1, &VertexArrayID);
+        glDeleteProgram(programID);
+
 		SDL_GL_DeleteContext(glContext);
 		SDL_DestroyWindow(window);
 		SDL_Quit();

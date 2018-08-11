@@ -18,12 +18,12 @@
     <ClCompile Include="..\..\android-project\app\jni\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\android-project\app\jni\src\sdl2_util.cpp">
+    <ClCompile Include="..\..\android-project\app\jni\src\shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\android-project\app\jni\src\sdl2_util.h">
+    <ClInclude Include="..\..\android-project\app\jni\src\includes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -20,10 +20,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\android-project\app\jni\src\main.cpp" />
-    <ClCompile Include="..\..\android-project\app\jni\src\sdl2_util.cpp" />
+    <ClCompile Include="..\..\android-project\app\jni\src\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\android-project\app\jni\src\sdl2_util.h" />
+    <ClInclude Include="..\..\android-project\app\jni\src\includes.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
